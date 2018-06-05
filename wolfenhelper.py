@@ -89,7 +89,7 @@ class Castle:
                 elif item_type == 0x50:  # door # todo: display doors
                     pass
                 elif item_type == 0x70:     # no idea what this is; might have to do with generating
-                    pass                    # SS bad guys that chase you between rooms # todo: figure out 0x70
+                    pass                    # SS bad guys that chase you between rooms # todo: figure out item=0x70
 
                 if fill:
                     canvas.create_rectangle(3, 3, 18, 9, fill=fill)
@@ -315,10 +315,11 @@ class MainWindow(tk.Tk):
         self.info_msg_text = tk.StringVar()
         self.status_msg_text = tk.StringVar()
         self.status_msg_text.set('this is the status bar!')
-        self.castle = Castle(save_game_path)
-        self.refresh_data()
+        self.map_notebook = ttk.Notebook(self)
 
+        self.castle = Castle(save_game_path)
         self.title("Castle Wolfenhelper")
+
         self.init_menu()
         self.init_frames()
 
@@ -375,18 +376,25 @@ class MainWindow(tk.Tk):
 
 
         ### right side map ###
-        map_notebook = ttk.Notebook(self)
-        for i in range(5):
-            map_notebook.grid_columnconfigure(i, weight=1)
-            map_notebook.grid_rowconfigure(i, weight=1)
-        map_floors = []
+        self.refresh_data()  # this also calls draw_map
+
+        ### bottom status bar ###
+        status_label = tk.Label(self, textvariable=self.status_msg_text,
+                                relief=tk.GROOVE, padx=3, pady=3, anchor=tk.W
+                                )
+        status_label.grid(row=1, column=0, columnspan=2, sticky=tk.W+tk.E)
+
+    def draw_map(self):
         grey_style = ttk.Style()
         grey_style.configure("grey.TFrame", background="grey", bd=3, relief=tk.GROOVE)
 
+        self.map_notebook.destroy()
+        self.map_notebook = ttk.Notebook(self)
+        self.map_notebook.grid(row=0, column=1, sticky=tk.N+tk.E+tk.W+tk.S)
+
         for floor_num in range(5):
-            floor_frame = ttk.Frame(map_notebook)
-            map_floors.append(floor_frame)
-            map_notebook.add(floor_frame, text="{}F".format(str(floor_num+1)))
+            floor_frame = ttk.Frame(self.map_notebook)
+            self.map_notebook.add(floor_frame, text="{}F".format(str(floor_num+1)))
             for i in range(5):
                 for j in range(5):
                     fm = ttk.Frame(floor_frame, width=160, height=90, style="grey.TFrame")
@@ -399,22 +407,14 @@ class MainWindow(tk.Tk):
                                                    relief=tk.RIDGE, background="black")
                                 self.castle.draw_canvas(canvas, room_num, k, l)
                                 canvas.grid(column=k, row=l)
-                    if floor_num == j == 4 and i ==3:
+                    if floor_num == j == 4 and i == 3:
                         lbl = tk.Label(fm, text="==> ESCAPE!")
                         lbl.grid()
-
-        map_notebook.grid(row=0, column=1, sticky=tk.N+tk.E+tk.W+tk.S)
-
-        ### bottom status bar ###
-        status_label = tk.Label(self, textvariable=self.status_msg_text,
-                                relief=tk.GROOVE, padx=3, pady=3, anchor=tk.W
-                                )
-        status_label.grid(row=1, column=0, columnspan=2, sticky=tk.W+tk.E)
 
     def refresh_data(self):
         self.castle.load()
         self.info_msg_text.set(self.castle.get_player_data() + self.castle.get_chest_contents())
-        # todo: refresh map
+        self.draw_map()
 
 
 def main():
